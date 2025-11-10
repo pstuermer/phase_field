@@ -17,7 +17,7 @@ static inline void *alloc_internal(const uint64_t num,
   void *ptr = aligned_alloc(alignment, aligned_size);
 
   if (NULL == ptr) {
-    fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+    fprintf(stderr, "\e[1;31m ERROR \e[0m"
 	    " in %s:%d: Out of memory in alloc (requested %lu bytes).\n",
 	    file, line, aligned_size);
     exit(1);

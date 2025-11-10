@@ -28,7 +28,7 @@ static inline void *alloc_internal(const uint64_t num,
   return ptr;
 }
 
-#define alloc(num, size) alloc_interla((num),(size), __FILE__, __LINE__)
+#define alloc(num, size) alloc_internal((num),(size), __FILE__, __LINE__)
 
 /* -------------------------------------------------------------------- */
 

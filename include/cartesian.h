@@ -7,14 +7,14 @@
 // forward declare
 typedef struct grid_t grid_t;
 
-typedef enum {
+typedef enum bc_type_t{
 	      BC_PERIODIC,
 	      BC_NEUMANN,
 	      BC_DIRICHLET
-} boundary_type_t;    
+} bc_type_t;
 
 typedef struct bc_t {
-  boundary_type_t type;
+  bc_type_t type;
   f64 value; // for Dirichlet BC
 } bc_t;
 
@@ -29,7 +29,7 @@ typedef struct grid_t {
   f64 *dx;
 
   // boundary conditions - can be extended to per-axis
-  boundary_condition_t bc;
+  bc_t bc;
 } grid_t;
 
 grid_t *create_grid(uint64_t dim, uint64_t *N, f64 *L);

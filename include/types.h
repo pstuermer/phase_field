@@ -13,4 +13,8 @@ typedef double f64;
 typedef complex c32;
 typedef complex double c64;
 
+#ifndef M_PI
+#define M_PI acos(-1.0)
+#endif
+
 #endif //TYPES_H

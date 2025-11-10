@@ -1,11 +1,11 @@
 #include "cartesian.h"
-#include <math.h"
-#include <stdio.h"
+#include <math.h>
+#include <stdio.h>
 
 grid_t *create_grid(uint64_t dim, uint64_t *N, f64 *L) {
 
   if (dim < 1 || dim >3) {
-    fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+    fprintf(stderr, "\e[1;31m ERROR \e[0m"
 	    ": Grid dimension mst be 1, 2 or 3. Got %lu instead\n",
 	    dim);
     exit(1);
@@ -13,13 +13,13 @@ grid_t *create_grid(uint64_t dim, uint64_t *N, f64 *L) {
 
   for (uint64_t d = 0; d < dim; d++) {
     if (0 == N[d]) {
-      fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+      fprintf(stderr, "\e[1;31m ERROR \e[0m"
 	      ": Grid size cannot be 0 in dimension %lu\n", d);
       exit(1);
     }
 
     if (0.0 >= L[d]) {
-      fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+      fprintf(stderr, "\e[1;31m ERROR \e[0m"
 	      ": Grid length must be positive in dimension %lu\n", d);
       exit(1);
     }
@@ -54,7 +54,7 @@ grid_t *create_grid(uint64_t dim, uint64_t *N, f64 *L) {
   return grid;
 }
 
-void grid_destroy_internal(grid_t **rid) {
+void grid_destroy_internal(grid_t **grid) {
 
   if (NULL == grid || NULL == *grid) return;
 
@@ -71,7 +71,7 @@ void grid_destroy_internal(grid_t **rid) {
 
 void set_periodic_boundary_conditions(grid_t *grid) {
   if (NULL == grid) {
-    fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+    fprintf(stderr, "\e[1;31m ERROR\e[0m" 
 	    ": NULL grid pointer when setting BC.\n");
     return;
   }
@@ -82,7 +82,7 @@ void set_periodic_boundary_conditions(grid_t *grid) {
 
 void set_neumann_boundary_conditions(grid_t *grid) {
   if (NULL == grid) {
-    fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+    fprintf(stderr, "\e[1;31m ERROR\e[0m"
 	    ": NULL grid pointer when setting BC.\n");
     return;
   }
@@ -94,7 +94,7 @@ void set_neumann_boundary_conditions(grid_t *grid) {
 
 void set_dirichlet_boundary_conditions(grid_t *grid, f64 val) {
   if (NULL == grid) {
-    fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+    fprintf(stderr, "\e[1;31m ERROR\e[0m"
 	    ": NULL grid pointer when setting BC.\n");
     return;
   }
@@ -106,51 +106,50 @@ void set_dirichlet_boundary_conditions(grid_t *grid, f64 val) {
 /* ------------------------------------------------------------------ */
 
 void compute_k2(grid_t *grid) {
+
+  register f64 dkx, dky, dkz = 0.0;
+  register f64 kx, ky, kz = 0.0;
+  register uint64_t Nx, Ny, Nz = 0;
+  
   if (1 == grid->dim) {
-    const register f64 dkx = 2.0*M_PI/grid->L[0];
-    cosnt register uint64_t Nx = grid->N[0];
+    dkx = 2.0*M_PI/grid->L[0];
+    Nx = grid->N[0];
     
     for (uint64_t i = 0; i < grid->N[0]; i++) {
-      const register f64 kx = (i <= 0.5*Nx) ? (dkx*i) :
-	(dkx*((int32_t)(i-Nx)));
-      grid->k2[i] = kx*kx; // be aware of 0 value later on
+      kx = (i <= 0.5*Nx) ? (dkx*i) :
+	(dkx*((int32_t)(i-Nx))); grid->k2[i] = kx*kx; // be aware of 0 value later on
     }
   }
 
   if (2 == grid->dim) {
-    const register f64 dkx = 2.0*M_PI/grid->L[0];
-    const register f64 dky = 2.0*M_PI/grid->L[1];
-    const register uint64_t Nx = grid->N[0];
-    const register uint64_t Ny = grid->N[1];
+    dkx = 2.0*M_PI/grid->L[0];
+    dky = 2.0*M_PI/grid->L[1];
+    Nx = grid->N[0];
+    Ny = grid->N[1];
     
     for (uint64_t j = 0; j < Ny; j++) {
-      const register f64 ky = (j <= 0.5*Ny) ? (dky*j) :
-	(dky*((int32_t)(j-Ny)));
+      ky = (j <= 0.5*Ny) ? (dky*j) : (dky*((int32_t)(j-Ny)));
       for (uint64_t i = 0; j < Nx; i++) {
-	const register f64 kx = (i <= 0.5*Nx) ? (dkx*i) :
-	  (dkx*((int32_t)(i-Nx)));
+	f64 kx = (i <= 0.5*Nx) ? (dkx*i) : (dkx*((int32_t)(i-Nx)));
 	grid->k2[i] = kx*kx + ky*ky;
       }
     }
   }
 
   if (3 == grid->dim) {
-    const register f64 dkx = 2.0*M_PI/grid->L[0];
-    const register f64 dky = 2.0*M_PI/grid->L[1];
-    const register f64 dkx = 2.0*M_PI/grid->L[2];
-    const register uint64_t Nx = grid->N[0];
-    const register uint64_t Ny = grid->N[1];
-    const register uint64_t Nz = grid->N[2];
+    dkx = 2.0*M_PI/grid->L[0];
+    dky = 2.0*M_PI/grid->L[1];
+    dkx = 2.0*M_PI/grid->L[2];
+    Nx = grid->N[0];
+    Ny = grid->N[1];
+    Nz = grid->N[2];
 
     for (uint64_t k = 0; k < Nz; k++) {
-      const register f64 kz = (k <= 0.5*Nz) ? (dkz*k) :
-	(dkz*((int32_t)(k-Nz)));
+      kz = (k <= 0.5*Nz) ? (dkz*k) : (dkz*((int32_t)(k-Nz)));
       for (uint64_t j = 0; j < Ny; j++) {
-	const register f64 ky = (j <= 0.5*Ny) ? (dky*j) :
-	  (dky*((int32_t)(j-Ny)));
+	ky = (j <= 0.5*Ny) ? (dky*j) : (dky*((int32_t)(j-Ny)));
 	for (uint64_t i = 0; j < Nx; i++) {
-	  const register f64 kx = (i <= 0.5*Nx) ? (dkx*i) :
-	    (dkx*((int32_t)(i-Nx)));
+	  kx = (i <= 0.5*Nx) ? (dkx*i) : (dkx*((int32_t)(i-Nx)));
 	  grid->k2[i] = kx*kx + ky*ky + kz*kz;
 	}
       }

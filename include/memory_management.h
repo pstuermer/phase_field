@@ -1,0 +1,48 @@
+#ifndef MEMORY_MANAGEMENT_H
+#define MEMORY_MANAGEMENT_H
+
+#include "types.h"
+
+#define ALLOC_ERROR(msg) \
+  fprintf(stderr, "ERROR in %s:%d: %s\n", __FILE__, __LINE__, msg)
+
+static inline void *alloc_internal(const uint64_t num,
+				   const uint64_t size,
+				   const char *file,
+				   const uint8_t line) {
+
+  // 64 bytes for complex double, 32 for double
+  // so 64 is safe either way
+  const uint64_t alignment = 64;
+  const uint64_t aligned_size = ((num*size + alignment-1)
+				 /alignment)*alignment;
+
+  void *ptr = aligned_alloc(alignment, aligned_size);
+
+  if (NULL == ptr) {
+    fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
+	    " in %s:%d: Out of memory in alloc (requested %lu bytes).\n",
+	    file, line, aligned_size);
+    exit(1);
+  }
+  
+  memset(ptr, 0, aligned_size);
+
+  return ptr;
+}
+
+#define alloc(num, size) alloc_interla((num),(size), __FILE__, __LINE__)
+
+/* -------------------------------------------------------------------- */
+
+static inline void safe_memory_free(void **ptr) {
+  if (NULL != ptr && NULL != *ptr) {
+    free( ptr );
+    *ptr = NULL;
+  }
+}
+
+#define safe_free(pointer) safe_memory_free((void **) &(pointer))
+
+
+#endif // MEMORY_MANAGEMENT_H

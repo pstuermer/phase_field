@@ -1,7 +1,0 @@
-#ifndef CAHN_HILLIARD_H
-#define CAHN_HILLIARD_H
-
-#include "types.h"
-#include "memory_management.h"
-
-#endif // CAHN_HILLIARD_H

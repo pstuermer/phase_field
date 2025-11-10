@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "memory_management.h"
+#include <fftw3.h>
 
 // forward declare
 struct grid_t;

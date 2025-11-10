@@ -32,12 +32,14 @@ typedef struct grid_t {
   boundary_condition_t bc;
 } grid_t;
 
-grid_t create_grid(uint64_t dim, uint64_t *N, f64 *L);
+grid_t *create_grid(uint64_t dim, uint64_t *N, f64 *L);
 void grid_destroy_interal(grid_t **grid);
 #define grid_destroy(grid) grid_destroy_internal((grid_t **) &(grid))
 
 void set_periodic_boundary_condition(grid_t *grid);
 void set_neumann_boundary_condition(grid_t *grid);
 void set_dirichlet_boundary_condition(grid_t *grid, f64 val);
+
+void compute_k2(grid_t *grid);
 
 #endif // CARTESIAN_H

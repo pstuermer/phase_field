@@ -3,9 +3,6 @@
 
 #include "types.h"
 
-#define ALLOC_ERROR(msg) \
-  fprintf(stderr, "ERROR in %s:%d: %s\n", __FILE__, __LINE__, msg)
-
 static inline void *alloc_internal(const uint64_t num,
 				   const uint64_t size,
 				   const char *file,

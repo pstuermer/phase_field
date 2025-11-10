@@ -1,0 +1,86 @@
+#ifndef EQUATION_H
+#define EQUATION_H
+
+#include "types.h"
+#include "memory_management.h"
+
+// forward declare
+struct grid_t;
+
+typedef enum {
+	      EQUATION_NONE,
+	      EQUATION_CAHN_HILLIARD
+} equation_type_t;
+
+typedef enum {
+	      TIME_NONE,
+	      TIME_SEMI_IMPLICIT
+} time_integration_t;
+
+typedef struct equation_t {
+
+  equation_type_t type; // what type of equation
+  const equation_ftable_t *ftable; // function-pointer table
+  void *data; // equation-specific data
+
+  // assigned grid
+  struct grid_t *grid;
+
+  // time-stepping
+  const f64 dt;
+  const uint64_t max_iter;
+  uint64_t iter;
+  time_integration_t time_method;
+
+  
+} equation_t;
+
+typedef struct cahn_hilliard_data_t {
+  f64 M;
+  f64 kappa;
+  f64 A;
+
+  f64 *restrict c;
+  f64 (*nonlinear)(f64 *params); // df/dc
+  f64 (*mu)(f64 *params);
+
+  f64 *restrict wrk1;
+  f64 *restrict wrk2;
+
+  fftw_plan fwd_plan;
+  fftw_plan bwd_plan;
+
+  f64 *restrict linear_op;
+
+} cahn_hilliard_data_t;
+
+
+
+equation_t create_cahn_hilliard(uint64_t dim, uint64_t *N,
+				f64 *L, f64 M, f64 kappa, f64 A);
+void equation_destroy_interal(equation_t **eq);
+#define equation_destroy(eq) equation_destroy_internal((equation_t **) &(eq))
+
+
+// boilerplate code can be extended to other types via X-macros
+
+// set function pointers for nonlinear term and chemical potential
+void set_nonlinear_cahn_hilliard(equation_t *eq,
+				 f64 (*nonlinear)(f64 *params));
+void set_mu_cahn_hilliard(equation_t *eq, f64 (*mu)(f64 *params));
+
+void set_iter(f64 dt, const uint64_t max_iter, uint64_t iter);
+
+
+// Initialize concentration fields
+void equation_init_uniform(equation_t *eq, f64 value);
+void equation_init_random(equation_t *eq, f64 amplitude);
+void equation_init_custom(equation_t *eq, f64 (*init_funct)(f64 *coords));
+
+
+// time propagation
+void set_semi_implicit_prop(equation_t *eq);
+
+void time_prop(equation_t *eq);
+
+#endif // EQUATION_H

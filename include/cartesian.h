@@ -5,13 +5,13 @@
 #include "memory_management.h"
 
 // forward declare
-struct equation_t
+typedef struct grid_t grid_t;
 
 typedef enum {
 	      BC_PERIODIC,
 	      BC_NEUMANN,
 	      BC_DIRICHLET
-} boundary_type_t
+} boundary_type_t;    
 
 typedef struct bc_t {
   boundary_type_t type;
@@ -25,15 +25,11 @@ typedef struct grid_t {
   uint64_t *N;
   uint64_t size;
   f64 *L;
-  double *dx;
+  f64 *restrict k2;
+  f64 *dx;
 
-  // so far global, but can easily be extended to individual
-  // along each axis and on each end
+  // boundary conditions - can be extended to per-axis
   boundary_condition_t bc;
-
-  // an easily extensible, user_defined struct for different
-  // kind of systems
-  struct equation_t;
 } grid_t;
 
 grid_t create_grid(uint64_t dim, uint64_t *N, f64 *L);
@@ -44,4 +40,4 @@ void set_periodic_boundary_condition(grid_t *grid);
 void set_neumann_boundary_condition(grid_t *grid);
 void set_dirichlet_boundary_condition(grid_t *grid, f64 val);
 
-#endif CARTESIAN_H
+#endif // CARTESIAN_H

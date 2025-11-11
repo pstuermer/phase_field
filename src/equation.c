@@ -102,3 +102,50 @@ f64 equation_compute_mass(equation_t *eq) {
   return val;
   
 }
+
+// I/O
+void equation_output_csv(equation_t *eq, const char *filename,
+			 uint8_t append) {
+  if (!eq->ftable || !eq->ftable->get_free_energy) {
+    fprintf(stderr, "\e[1:31m ERROR\e[0m: No free energy function.\n");
+    exit(1);
+  }
+  
+  FILE *fp = fopen(filename, append ? "a" : "w");
+  if (!fp) {
+    fprintf(stderr, "\e[1;31m ERROR\e[0m: Cannot open %s\n", filename);
+    return;
+  }
+
+  // Write header if new file
+  if (!append)
+    fprintf(fp, "time, free energy\n");
+
+  f64 energy = eq->ftable->get_free_energy(eq);
+  f64 time = eq->iter * eq->dt;
+  fprintf(fp, "%.5e,%.10e\n", time, energy);
+
+  fclose(fp);
+}
+
+void equation_output_field(equation_t *eq, const char *filename) {
+  if (!eq->ftable && !eq->ftable->get_field) {
+    fprintf(stderr, "\e[1:31m ERROR\e[0m: No get field function.\n");
+    exit(1);
+  }
+
+  FILE *fp = fopen(filename, "wb");
+  if (!fp) {
+    fprintf(stderr, "\e[1:31m ERROR\e[0m: Cannot open %s\n", filename);
+    return;
+  }
+
+  grid_t *grid = eq->grid;
+
+  // write field data
+  f64 *field = eq->ftable->get_field(eq);
+  fwrite(field, sizeof(f64), grid->size, fp);
+
+  fclose(fp);
+  printf("Wrote field to %s\n", filename);
+}

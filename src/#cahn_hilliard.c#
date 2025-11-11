@@ -16,6 +16,7 @@ static const equation_ftable_t cahn_hilliard_ftable =
    .setup_spectral = cahn_hilliard_setup_spectral,
    .get_field = cahn_hilliard_get_field,
    .set_field = cahn_hilliard_set_field_value,
+   .get_free_energy = cahn_hilliard_get_free_energy,
    .cleanup = cahn_hilliard_cleanup
   };
 
@@ -268,7 +269,7 @@ static void cahn_hilliard_step_semi_implicit(equation_t *eq) {
 }
 
 
-f64 cahn_hilliard_get_free_energy(equation_t *eq) {
+f64 cahn_hilliard_compute_free_energy(equation_t *eq) {
   struct cahn_hilliard_data_t *data =
     (struct cahn_hilliard_data_t *)eq->data;
   grid_t *grid = eq->grid;

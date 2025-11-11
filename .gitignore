@@ -1,0 +1,15 @@
+*.o
+*.so
+*.a
+*.lib
+*.la
+*.exe
+
+build/
+bin/
+obj/
+
+*.dat
+*.csv
+*~
+#*

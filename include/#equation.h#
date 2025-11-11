@@ -8,7 +8,6 @@
 // forward declare
 struct grid_t;
 struct equation_ftable_t;
-//enum bc_type_t;
 
 typedef enum {
 	      EQUATION_NONE,
@@ -30,6 +29,8 @@ typedef struct equation_t {
   struct grid_t *grid;
 
   // time-stepping
+  // would want these to be const,
+  // need to check how do modify value at address
   f64 dt;
   uint64_t max_iter;
   uint64_t iter;
@@ -59,9 +60,8 @@ typedef struct cahn_hilliard_data_t {
 
 
 
-equation_t *create_cahn_hilliard(uint64_t dim, uint64_t *N,
-				 f64 *L, f64 M, f64 kappa, f64 A,
-				 bc_type_t bc);
+equation_t create_cahn_hilliard(uint64_t dim, uint64_t *N,
+				f64 *L, f64 M, f64 kappa, f64 A);
 void equation_destroy_interal(equation_t **eq);
 #define equation_destroy(eq) equation_destroy_internal((equation_t **) &(eq))
 
@@ -73,8 +73,7 @@ void set_nonlinear_cahn_hilliard(equation_t *eq,
 				 f64 (*nonlinear)(f64 *params));
 void set_mu_cahn_hilliard(equation_t *eq, f64 (*mu)(f64 *params));
 
-void set_iter(equation_t *eq, f64 dt,
-	      uint64_t max_iter, uint64_t iter);
+void set_iter(f64 dt, const uint64_t max_iter, uint64_t iter);
 
 
 // Initialize concentration fields

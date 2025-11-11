@@ -6,13 +6,14 @@
 
 // forward declare
 typedef struct grid_t grid_t;
-
-typedef enum bc_type_t{
-	      BC_PERIODIC,
-	      BC_NEUMANN,
-	      BC_DIRICHLET
-} bc_type_t;
-
+/*
+typedef enum bc_type_t
+  {
+   BC_PERIODIC,
+   BC_NEUMANN,
+   BC_DIRICHLET
+  } bc_type_t;
+*/
 typedef struct bc_t {
   bc_type_t type;
   f64 value; // for Dirichlet BC
@@ -33,7 +34,7 @@ typedef struct grid_t {
 } grid_t;
 
 grid_t *create_grid(uint64_t dim, uint64_t *N, f64 *L);
-void grid_destroy_interal(grid_t **grid);
+void grid_destroy_internal(grid_t **grid);
 #define grid_destroy(grid) grid_destroy_internal((grid_t **) &(grid))
 
 void set_periodic_boundary_condition(grid_t *grid);

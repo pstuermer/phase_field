@@ -5,39 +5,82 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void create_fftw_plans(equation_t *eq) {
-  grid_t *grid = eq->grid;
-  uint64_t dim = grid->dim;
-  uint64_t *N = grid->N;
+typedef struct equation_ftable_t {
+  void (*step)(equation_t *eq);
+  void (*setup_spectral)(equation_t *eq);
+  void (*cleanup)(equation_t *eq);
+} equation_ftable_t;
 
-  uint64_t fftw_N[dim];
-  for (uint64_t i = 0; i < dim; i++) fftw_N[i] = N[dim-1-i];
+static void cahn_hilliard_step_semi_implicit(equation_t *eq);
+static void cahn_hilliard_setup_spectral(equation_t *eq);
+static void cahn_hilliard_cleanup(equation_t *eq);
 
-  boundary_type_t bc_type = grid->bc.type;
+static const equation_ftable_t cahn_hilliard_ftable =
+  {
+   .step = cahn_hilliard_step_semi_implicit,
+   .setup_spectral = cahn_hilliard_setup_spectral,
+   .cleanup = cahn_hilliard_cleanup
+  };
 
-  switch (bc_type) {
-  case BC_NEUMANN:
-    data->fwd_plan = fftw_plan_many_r2r(dim, fftw_N, 1, eq->data->wrk1,
-					NULL, 1, 1, eq->data->wrk2,
-					NULL, 1, 1, FFTW_REDFT10,
-					FFTW_MEASURE);
-    data->bwd_plan = fftw_plan_many_r2r(dim, fftw_N, 1, eq->data->wrk1,
-					NULL, 1, 1, eq->data->wrk2,
-					NULL, 1, 1, FFTW_REDFT01,
-					FFTW_MEASURE);
-    break;
-  }
+static f64 default_nonlinear(f64 *params) {
+  f64 c = params[0];
+  f64 A = params[1];
+  return 2.0*A*c * (1.0-c) * (1.0-2.0*c);
+}
 
-  default:
-    fprintf(stderr, ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET
-	    ": Unknown boundary condition type\n");
-    exit(1);
+static f64 default_mu(f64 *params) {
+  return default_nonlinear(params);
 }
 
 
+static void create_fftw_plans(equation_t *eq) {
+  grid_t *grid = eq->grid;
+  // need to cast this to that data type for fftw-plans
+  // need to think about how to do this differently
+  cahn_hilliard_data_t *data = eq->data;
+  uint64_t dim = grid->dim;
+  uint64_t *N = grid->N;
+
+  int32_t fftw_N[dim];
+  for (uint64_t i = 0; i < dim; i++) fftw_N[i] = N[dim-1-i];
+
+  bc_type_t bc_type = grid->bc.type;
+
+  fftw_r2r_kind *kind_fwd = alloc(dim, sizeof(fftw_r2r_kind));
+  fftw_r2r_kind *kind_bwd = alloc(dim, sizeof(fftw_r2r_kind));
+
+  for (uint64_t d = 0; d < dim; d++) {
+    kind_fwd[d] = FFTW_REDFT10;
+    kind_bwd[d] = FFTW_REDFT01;
+  }
+
+  switch (bc_type) {
+  case BC_NEUMANN:
+    data->fwd_plan = fftw_plan_many_r2r(dim, fftw_N, 1,
+					data->wrk1,
+					NULL, 1, 1,
+					data->wrk2,
+					NULL, 1, 1, kind_fwd,
+					FFTW_MEASURE);
+    data->bwd_plan = fftw_plan_many_r2r(dim, fftw_N, 1,
+					data->wrk1,
+					NULL, 1, 1,
+					data->wrk2,
+					NULL, 1, 1, kind_bwd,
+					FFTW_MEASURE);
+    break;
+
+  default:
+    fprintf(stderr, "\e[1:31m Error\e[0m"
+	    ": Unknown boundary condition type\n");
+    exit(1);
+    break;
+  }
+}
+
 equation_t *create_cahn_hilliard(uint64_t dim, uint64_t *N,
-				 f64 *L, f64 M f64 kappa, f64 A,
-				 bondary_type_t bc) {
+				 f64 *L, f64 M, f64 kappa, f64 A,
+				 bc_type_t bc) {
 
   // Allocate equation structure
   equation_t *eq = alloc(1, sizeof(equation_t));
@@ -48,7 +91,7 @@ equation_t *create_cahn_hilliard(uint64_t dim, uint64_t *N,
 
   // Create grid
   eq->grid = create_grid(dim, N, L);
-  if (BC_PERIDIC == bc)
+  if (BC_PERIODIC == bc)
     set_periodic_boundary_condition(eq->grid);
   if (BC_NEUMANN == bc)
     set_neumann_boundary_condition(eq->grid);
@@ -57,8 +100,8 @@ equation_t *create_cahn_hilliard(uint64_t dim, uint64_t *N,
     
 
   // Initialize time stepping
-  *(f64*)eq->dt = 0.01;
-  *(uint64_t*)&eq->max_iter = 1000;
+  eq->dt = 0.01;
+  eq->max_iter = 1000;
   eq->iter = 0;
   eq->time_method = TIME_SEMI_IMPLICIT;
 
@@ -83,7 +126,7 @@ equation_t *create_cahn_hilliard(uint64_t dim, uint64_t *N,
 
   create_fftw_plans(eq);
 
-  if (eq->ftable->setup->spectral) {
+  if (eq->ftable->setup_spectral) {
     eq->ftable->setup_spectral(eq);
   }
 
@@ -103,7 +146,7 @@ void equation_destroy_internal(equation_t **eq) {
 }
 
 static void cahn_hilliard_cleanup(equation_t *eq) {
-  cahn_hilliard_data_t *data = (cahn_hilliard_data_t*)eq->data;
+  cahn_hilliard_data_t *data = (cahn_hilliard_data_t *)eq->data;
 
   if (data) {
     safe_free( data->c );
@@ -112,18 +155,20 @@ static void cahn_hilliard_cleanup(equation_t *eq) {
 
     safe_free( data->linear_op );
 
-    if (data->fwd_plan) fftw_destroy_plan( fwd_plan );
-    if (data->bwd_plan) fftw_destroy_plan( bwd_plan );
+    if (data->fwd_plan) fftw_destroy_plan( data->fwd_plan );
+    if (data->bwd_plan) fftw_destroy_plan( data->bwd_plan );
 
-    safe_free( data );
+    safe_free( *data );
   }
+
+  safe_free( *eq );
 }
 
 /* ------------------------------------------------------------------ */
 void set_nonlinear_cahn_hilliard(equation_t *eq,
 				 f64 (*nonlinear)(f64 *params)) {
   if (eq->type != EQUATION_CAHN_HILLIARD) {
-    fprintf(stderr, ANSI_COLOR_RED "Error" ANSI_COLOR_RESET 
+    fprintf(stderr, "\e[1:31m Error\e[0m"
             ": Equation is not Cahn-Hilliard type\n");
     return;
   }
@@ -134,7 +179,7 @@ void set_nonlinear_cahn_hilliard(equation_t *eq,
 
 void set_mu_cahn_hilliard(equation_t *eq, f64 (*mu)(f64 *params)) {
   if (eq->type != EQUATION_CAHN_HILLIARD) {
-    fprintf(stderr, ANSI_COLOR_RED "Error" ANSI_COLOR_RESET 
+    fprintf(stderr, "\e[1:31m Error\e[0m"
             ": Equation is not Cahn-Hilliard type\n");
     return;
   }

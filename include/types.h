@@ -13,6 +13,13 @@ typedef double f64;
 typedef complex c32;
 typedef complex double c64;
 
+typedef enum bc_type_t
+  {
+   BC_PERIODIC,
+   BC_NEUMANN,
+   BC_DIRICHLET
+  } bc_type_t;
+
 #ifndef M_PI
 #define M_PI acos(-1.0)
 #endif

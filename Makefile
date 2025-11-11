@@ -16,7 +16,7 @@ SRC = $(wildcard src/*.c src/**/*.c)
 # objects to be created
 OBJ = $(patsubst %.c, %.o,$(SRC))
 
-//TEST_SRC = $(wildcard tests/apply_block_conj_grad_test.c)
+TEST_SRC = $(wildcard tests/*.c)
 TESTS = $(patsubst %.c,%.ex ,$(TEST_SRC))
 TEST_OBJ = $(patsubst %.c, %.o, $(TEST_SRC))
 
@@ -41,7 +41,7 @@ tests/%.o: tests/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 tests/%.ex: tests/%.o $(TRG)
-	$(CC) $< -o $@ $(LDFLAGS) -fopenmp
+	$(CC) $< -o $@ $(LDFLAGS)
 	rm -f $<
 
 # Run Valgrind on the specified test executable

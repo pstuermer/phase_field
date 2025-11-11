@@ -63,7 +63,15 @@ void equation_init_custom(equation_t *eq, f64 (*init_funct)(f64 *coords));
 
 // time propagation
 void set_semi_implicit_prop(equation_t *eq);
-
 void time_prop(equation_t *eq);
+void equation_run(equation_t *eq);
+
+// conservation checks
+f64 equation_compute_mass(equation_t *eq);
+f64 equation_compute_free_energy(equation_t *eq);
+
+// I/O
+void equation_output_csv(equation_t *eq, const char *filename, uint8_t append);
+void equation_output_field(equation_t *eq, const char *filename);
 
 #endif // EQUATION_H

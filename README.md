@@ -65,3 +65,4 @@ Linear ∇⁴ term treated implicitly (stable), nonlinear term explicit. Precomp
 - no adaptive timestepping
 - currently no unittests
 - only Cahn-Hilliard equation
+- documentation with docstrings only in include/equation.h and src/equation.c as example

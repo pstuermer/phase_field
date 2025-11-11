@@ -62,6 +62,7 @@ typedef struct equation_ftable_t {
   void (*setup_spectral)(equation_t *eq);  ///< Precompute spectral operators (k-space)
   void (*cleanup)(equation_t *eq);         ///< Free equation-specific memory
   f64* (*get_field)(equation_t *eq);       ///< Get pointer to primary field
+  f64 (*get_free_energy)(equation_t *eq);   ///< Get value of current free energy
   void (*set_field)(equation_t *eq, uint64_t i, f64 val); ///< Set field value at index
 } equation_ftable_t;
 
@@ -173,7 +174,7 @@ f64 equation_compute_mass(equation_t *eq);
  * @param filename CSV file path
  * @param append If true, append to existing file; if false, overwrite
  */
-void equation_output_csv(equation_t *eq, const char *filename, bool append);
+void equation_output_csv(equation_t *eq, const char *filename, uint8_t append);
 
 /**
  * @brief Write field data in binary format

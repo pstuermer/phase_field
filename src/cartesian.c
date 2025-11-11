@@ -129,7 +129,7 @@ void compute_k2(grid_t *grid) {
     
     for (uint64_t j = 0; j < Ny; j++) {
       ky = (j <= 0.5*Ny) ? (dky*j) : (dky*((int32_t)(j-Ny)));
-      for (uint64_t i = 0; j < Nx; i++) {
+      for (uint64_t i = 0; i < Nx; i++) {
 	f64 kx = (i <= 0.5*Nx) ? (dkx*i) : (dkx*((int32_t)(i-Nx)));
 	grid->k2[i] = kx*kx + ky*ky;
       }
@@ -139,7 +139,7 @@ void compute_k2(grid_t *grid) {
   if (3 == grid->dim) {
     dkx = 2.0*M_PI/grid->L[0];
     dky = 2.0*M_PI/grid->L[1];
-    dkx = 2.0*M_PI/grid->L[2];
+    dkz = 2.0*M_PI/grid->L[2];
     Nx = grid->N[0];
     Ny = grid->N[1];
     Nz = grid->N[2];
@@ -148,7 +148,7 @@ void compute_k2(grid_t *grid) {
       kz = (k <= 0.5*Nz) ? (dkz*k) : (dkz*((int32_t)(k-Nz)));
       for (uint64_t j = 0; j < Ny; j++) {
 	ky = (j <= 0.5*Ny) ? (dky*j) : (dky*((int32_t)(j-Ny)));
-	for (uint64_t i = 0; j < Nx; i++) {
+	for (uint64_t i = 0; i < Nx; i++) {
 	  kx = (i <= 0.5*Nx) ? (dkx*i) : (dkx*((int32_t)(i-Nx)));
 	  grid->k2[i] = kx*kx + ky*ky + kz*kz;
 	}

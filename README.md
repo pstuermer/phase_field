@@ -38,8 +38,8 @@ src/
   cartesian.c          - Grid implementation, k² computation
   equation.c           - Generic functions (init, run, output)
   cahn_hilliard.c      - Semi-implicit spectral solver
-tests/
-  benchmark1b.c        - NIST benchmark driver
+examples/
+  spinodal_1b.c        - NIST benchmark driver
 ```
 
 
@@ -65,4 +65,5 @@ Linear ∇⁴ term treated implicitly (stable), nonlinear term explicit. Precomp
 - no adaptive timestepping
 - currently no unittests
 - only Cahn-Hilliard equation
-- documentation with docstrings only in include/equation.h and src/equation.c as example
+- documentation with docstrings only in include/equation.h as temporary example
+- example for spinodal not complete or tested, but shows general idea

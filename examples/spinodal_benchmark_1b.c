@@ -21,6 +21,8 @@ f64 custom_init(f64 *coords) {
 
 int main() {
 
+  // Not done yet, and would be me next step
+
   uint64_t N[2] = {128, 128}; // gridpoints
   f64 L[2] = {200.0, 200.0};
 

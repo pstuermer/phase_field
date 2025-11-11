@@ -1,15 +1,9 @@
-#include "equation.h"
-#include "cartesian.h"
+#include "../include/equation.h"
+#include "../include/cartesian.h"
 #include <fftw3.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-
-/*typedef struct equation_ftable_t {
-  void (*step)(equation_t *eq);
-  void (*setup_spectral)(equation_t *eq);
-  void (*cleanup)(equation_t *eq);
-  } equation_ftable_t;*/
 
 /* ------------------------------------------------------------------ */
 void equation_destroy_internal(equation_t **eq) {
@@ -43,33 +37,34 @@ void set_semi_implicit_prop(equation_t *eq) {
 /* ------------------------------------------------------------------ */
 
 void equation_init_custom(equation_t *eq, f64(*init_func)(f64 *coords)) {
-  if (EQUATION_TYPE_HILLIARD == eq->type) {
-    struct cahn_hilliard_data_t *data =
-      (struct cahn_hilliard_data_t *)eq->data;
-    grid_t *grid = eq->grid;
+  if (!eq->ftable || !eq->ftable->set_field) {
+    fprintf(stderr, "\e[1:31m ERROR\e[0m: No set field function.\n");
+    exit(1);
+  }
+  
+  grid_t *grid = eq->grid;
+  f64 coords[3] = {0.0, 0.0, 0.0};
 
-    f64 coords[3] = {0.0, 0.0, 0.0};
-
-    for (uint64_t i = 0; i < grid->size; i++) {
-      // Convert linear index to coordinates
-      coords[0] = i%(grid->N[0]);
-      if (dim > 1) coords[1] = (i/(grid->N[0]))%(grid->N[1]);
-      if (dim > 2) coords[2] = (i/((grid->N[0])*(dgrid->N[1])));
-
-      data->c[i] = init_func(coords);
-    }
+  for (uint64_t i = 0; i < grid->size; i++) {
+    // Convert linear index to coordinates
+    coords[0] = i%(grid->N[0]);
+    if (grid->dim > 1) coords[1] = (i/(grid->N[0]))%(grid->N[1]);
+    if (grid->dim > 2) coords[2] = (i/((grid->N[0])*(grid->N[1])));
+    
+    eq->ftable->set_field(eq, i, init_func(coords));
   }
 }
+
 
 
 /* ------------------------------------------------------------------ */
 void time_prop(equation_t *eq) {
   if (!eq->ftable || !eq->ftable->step) {
-    fprtinf(stderr, "\e[1:31m ERROR\e[0m: No time stepping function.\n");
+    fprintf(stderr, "\e[1:31m ERROR\e[0m: No time stepping function.\n");
     exit(1);
   }
 
-  eq->table->step(eq);
+  eq->ftable->step(eq);
 }
 
 void equation_run(equation_t *eq)
@@ -94,15 +89,16 @@ void equation_run(equation_t *eq)
 // mass conservation check
 
 f64 equation_compute_mass(equation_t *eq) {
-  register f64 val = 0.0;
-  
-  if (EQUATION_CAHN_HILLIARD == eq->type) {
-    struct cahn_hilliard_data_t *data =
-      (struct cahn_hilliard_data_t *)eq->data;
-    for (uint64_t i = 0; i < eq->grid->size; i++) {
-      mass += data->c[i];
-    }
-    return mass;
+  if (!eq->ftable || !eq->ftable->get_field) {
+    fprintf(stderr, "\e[1:31m ERROR\e[0m: No get field function.\n");
+    exit(1);
   }
-  return 0.0;
+  
+  register f64 val = 0.0;
+  f64 *field = eq->ftable->get_field(eq);
+  for (uint64_t i = 0; i < eq->grid->size; i++)
+    val += field[i];
+
+  return val;
+  
 }

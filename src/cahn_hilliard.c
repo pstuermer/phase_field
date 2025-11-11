@@ -14,6 +14,8 @@ static const equation_ftable_t cahn_hilliard_ftable =
   {
    .step = cahn_hilliard_step_semi_implicit,
    .setup_spectral = cahn_hilliard_setup_spectral,
+   .get_field = cahn_hilliard_get_field,
+   .set_field = cahn_hilliard_set_field_value,
    .cleanup = cahn_hilliard_cleanup
   };
 
@@ -196,6 +198,7 @@ static void cahn_hilliard_setup_spectral(equation_t *eq) {
 
 static f64 get_transform_normalization(equation_t *eq) {
   grid_t *grid = eq->grid;
+  f64 norm = 1.0;
 
   switch (grid->bc.type) {
     
@@ -208,7 +211,6 @@ static f64 get_transform_normalization(equation_t *eq) {
   case BC_NEUMANN:
   case BC_DIRICHLET:
     // DCT/DST normalization: 1/(2^dim * N_0*N_1*N_2)
-    f64 norm = 1.0;
     for (uint64_t d = 0; d < grid->dim; d++) {
       norm *= 2.0 * grid->N[d];
     }
@@ -234,12 +236,12 @@ static void cahn_hilliard_step_semi_implicit(equation_t *eq) {
   }
 
   // forward transform of df/dc into wrk2
-  fftw_execute_dft(data->fwd_plan,
+  fftw_execute_r2r(data->fwd_plan,
 		   data->wrk1,
 		   data->wrk2);
 
   // forward transform c^(n)
-  fftw_execute_dft(data->fwd_plan,
+  fftw_execute_r2r(data->fwd_plan,
 		   data->c,
 		   data->wrk1);
 
@@ -253,12 +255,12 @@ static void cahn_hilliard_step_semi_implicit(equation_t *eq) {
   }
 
   // inverse transform
-  fftw_execute_dft(data->bwd_plan,
+  fftw_execute_r2r(data->bwd_plan,
 		   data->wrk1,
 		   data->c);
 
   // normalize
-  for (uint64_t i = 0; i < grid-.size; i++) {
+  for (uint64_t i = 0; i < grid->size; i++) {
     data->c[i] *= norm;
   }
 

@@ -36,4 +36,9 @@ void set_nonlinear_cahn_hilliard(equation_t *eq,
 				 f64 (*nonlinear)(f64 *params));
 void set_mu_cahn_hilliard(equation_t *eq, f64 (*mu)(f64 *params));
 
+// accesor functions for interface
+f64 *cahn_hilliard_get_field(equation_t *eq);
+void cahn_hilliard_set_field_value(equation_t *eq, uint64_t i, f64 value);
+f64 cahn_hilliard_get_field_value(equation_t *eq, uint64_t i);
+
 #endif // CAHN_HILLIARD_H

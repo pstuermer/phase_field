@@ -14,6 +14,8 @@ static const equation_ftable_t cahn_hilliard_ftable =
   {
    .step = cahn_hilliard_step_semi_implicit,
    .setup_spectral = cahn_hilliard_setup_spectral,
+   .get_field = cahn_hilliard_get_field,
+   .set_field = cahn_hilliard_set_field_value,
    .cleanup = cahn_hilliard_cleanup
   };
 
@@ -148,7 +150,6 @@ static void cahn_hilliard_cleanup(equation_t *eq) {
     safe_free( *data );
   }
 
-  safe_free( *eq );
 }
 
 /* ------------------------------------------------------------------ */
@@ -175,6 +176,94 @@ void set_mu_cahn_hilliard(equation_t *eq, f64 (*mu)(f64 *params)) {
   struct cahn_hilliard_data_t *data =
     (struct cahn_hilliard_data_t*)eq->data;
   data->mu = mu;
-}    
+}
 
+/* ------------------------------------------------------------------ */
+
+static void cahn_hilliard_setup_spectral(equation_t *eq) {
+  struct cahn_hilliard_data_t *data =
+    (struct cahn_hilliard_data_t *)eq->data;
+  grid_t *grid = eq->grid;
+
+  // Precompute linear operator for semi-implicit
+  for (uint64_t i = 0; i < grid->size; i++) {
+    f64 k2 = grid->k2[i];
+    f64 k4 = k2*k2;
+    data->linear_op[i] = 1.0/(1.0 +
+			      (eq->dt * data->M * data->kappa * k4));
+  }
+}
+
+/* ------------------------------------------------------------------ */
+
+static f64 get_transform_normalization(equation_t *eq) {
+  grid_t *grid = eq->grid;
+  f64 norm = 1.0;
+
+  switch (grid->bc.type) {
+    
+  case BC_PERIODIC:
+  default:
+    return 1.0/grid->size;
+
+    break;
+
+  case BC_NEUMANN:
+  case BC_DIRICHLET:
+    // DCT/DST normalization: 1/(2^dim * N_0*N_1*N_2)
+    for (uint64_t d = 0; d < grid->dim; d++) {
+      norm *= 2.0 * grid->N[d];
+    }
+
+    return 1.0/norm;
+    break;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+static void cahn_hilliard_step_semi_implicit(equation_t *eq) {
+  struct cahn_hilliard_data_t *data = (struct cahn_hilliard_data_t *)eq->data;
+  grid_t *grid = eq->grid;
+  const f64 norm = get_transform_normalization(eq);
+
+  f64 params[2];
+  params[1] = data->A;
+
+  // Compute df/dc in real space & stor in wrk1
+  for (uint64_t i = 0; i < grid->size; i++) {
+    params[0] = data->c[i];
+    data->wrk1[i] = data->nonlinear(params);
+  }
+
+  // forward transform of df/dc into wrk2
+  fftw_execute_dft(data->fwd_plan,
+		   data->wrk1,
+		   data->wrk2);
+
+  // forward transform c^(n)
+  fftw_execute_dft(data->fwd_plan,
+		   data->c,
+		   data->wrk1);
+
+  // apply semi-implicit update in spectral space
+  // \tilde{c}^(n+1) = \tilde{c}^(n)-dt*M*k^2*\tilde{f}'(c^(n) /
+  //                   (1+dt*M*kappa*k^4)
+  for (uint64_t i = 0; i < grid->size; i++) {
+    f64 k2 = grid->k2[i];
+    data->wrk1[i] = data->linear_op[i] *
+      (data->wrk2[i] - eq->dt*data->M*k2 * data->wrk2[i]);
+  }
+
+  // inverse transform
+  fftw_execute_dft(data->bwd_plan,
+		   data->wrk1,
+		   data->c);
+
+  // normalize
+  for (uint64_t i = 0; i < grid-.size; i++) {
+    data->c[i] *= norm;
+  }
+
+  eq->iter++;
+}
 

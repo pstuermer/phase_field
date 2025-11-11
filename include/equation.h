@@ -41,6 +41,8 @@ typedef struct equation_t {
 typedef struct equation_ftable_t {
   void (*step)(equation_t *eq);
   void (*setup_spectral)(equation_t *eq);
+  f64* (*get_field)(equation_t *eq);
+  void (*set_field)(equation_t *eq, uint64_t i, f64 val);
   void (*cleanup)(equation_t *eq);
 } equation_ftable_t;
 
